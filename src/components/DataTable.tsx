@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../supabase/supabaseClient";
-import type { Character, Town } from "../interfaces";
+import type { ICharacter, ITown } from "../interfaces";
 import * as XLSX from "xlsx";
 import { useNavigate } from "react-router";
 
 export default function DataTable() {
   const [view, setView] = useState<"towns" | "characters">("characters");
-  const [townsData, setTownsData] = useState<Town[]>([]);
-  const [charactersData, setCharactersData] = useState<Character[]>([]);
+  const [townsData, setTownsData] = useState<ITown[]>([]);
+  const [charactersData, setCharactersData] = useState<ICharacter[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [townFilterInput, setTownFilterInput] = useState("");
@@ -25,7 +25,7 @@ export default function DataTable() {
     const fetchAllRows = async () => {
       setLoading(true);
 
-      const allRows: (Town | Character)[] = [];
+      const allRows: (ITown | ICharacter)[] = [];
       const pageSize = 100;
       let page = 0;
       let hasMore = true;
@@ -67,9 +67,9 @@ export default function DataTable() {
       }
 
       if (view === "towns") {
-        setTownsData(allRows as Town[]);
+        setTownsData(allRows as ITown[]);
       } else {
-        setCharactersData(allRows as Character[]);
+        setCharactersData(allRows as ICharacter[]);
       }
 
       setPage(1);

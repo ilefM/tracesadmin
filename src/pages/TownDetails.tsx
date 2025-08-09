@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router";
-import type { Town } from "../interfaces";
+import type { ITown } from "../interfaces";
 import { supabase } from "../supabase/supabaseClient";
 import { useAuth } from "../context/AuthProvider";
 
 export default function TownDetails() {
-  const [town, setTown] = useState<Town | null>(null);
+  const [town, setTown] = useState<ITown | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState<Partial<Town>>({});
+  const [formData, setFormData] = useState<Partial<ITown>>({});
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
@@ -38,7 +38,7 @@ export default function TownDetails() {
     fetchTown();
   }, [id]);
 
-  const handleChange = (field: keyof Town, value: string) => {
+  const handleChange = (field: keyof ITown, value: string) => {
     setFormError(null);
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
