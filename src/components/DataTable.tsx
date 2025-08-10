@@ -86,18 +86,18 @@ export default function DataTable() {
     setView((prev) => (prev === "towns" ? "characters" : "towns"));
   };
 
-  const handleSuggestionClick = (item: {
+  function handleSuggestionClick(item: {
     id: string;
     type: "town" | "character";
-  }) => {
+  }) {
     if (item.type === "town") {
       navigate(`/commune-details/${item.id}`);
     } else {
       navigate(`/pionnier-details/${item.id}`);
     }
-  };
+  }
 
-  const handleExportToExcel = () => {
+  function handleExportToExcel() {
     const exportData = data.map((item: any) => {
       if (view === "towns") {
         return {
@@ -116,16 +116,19 @@ export default function DataTable() {
           "Lieu de décès": item.deathplace,
           Commune: item.towns?.name || "",
           Département: item.dep_code || "",
+          bio: item.bio,
         };
       }
     });
 
+    const name = view === "characters" ? "pionniers" : "communes";
+
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Export");
+    XLSX.utils.book_append_sheet(workbook, worksheet, name);
 
-    XLSX.writeFile(workbook, `export_${view}.xlsx`);
-  };
+    XLSX.writeFile(workbook, `${name}.xlsx`, { bookType: "csv" });
+  }
 
   return (
     <div className="w-full">

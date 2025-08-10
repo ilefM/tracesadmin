@@ -17,4 +17,7 @@ export interface ICharacter {
   deathplace?: string;
   dep_code?: string;
   town_id?: string;
+  towns?: {
+    name: string;
+  };
 }
