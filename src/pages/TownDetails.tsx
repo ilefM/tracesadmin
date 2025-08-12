@@ -30,6 +30,7 @@ export default function TownDetails() {
           return;
         }
         setTown(townFromId);
+        setFormData(townFromId);
         setLoading(false);
       } catch (err) {
         setLoading(false);
