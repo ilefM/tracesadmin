@@ -24,10 +24,6 @@ export default function NavBar() {
           Téléverser des données
         </NavLink>
 
-        <NavLink to="/a-propos" className="bg-gray-300 px-4 py-2 rounded">
-          Aide
-        </NavLink>
-
         {!user ? (
           <NavLink to="/se-connecter" className="bg-gray-300 px-4 py-2 rounded">
             Se connecter
@@ -40,6 +36,10 @@ export default function NavBar() {
             Se déconnecter
           </button>
         )}
+
+        <NavLink to="/a-propos" className="bg-gray-300 px-4 py-2 rounded">
+          Aide
+        </NavLink>
       </div>
     </div>
   );

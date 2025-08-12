@@ -1,7 +1,7 @@
 export interface ITown {
   id: string;
   name: string;
-  insee_code?: string;
+  insee_code: string;
   postal_code?: string;
   dep_code?: string;
   position?: [number, number];
@@ -20,6 +20,7 @@ export interface ICharacter {
     name: string;
     dep_code: string;
   };
+  main_character: boolean;
 }
 
 export interface ITownExcel {
@@ -32,6 +33,7 @@ export interface ITownExcel {
 }
 
 export interface ICharacterExcel {
+  main_character: boolean;
   lastname: string;
   firstname?: string;
   bio?: string;

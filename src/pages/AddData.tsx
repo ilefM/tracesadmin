@@ -1,23 +1,30 @@
 import { useState } from "react";
 import { useAuth } from "../context/AuthProvider";
-import * as XLSX from "xlsx";
+
 import {
+  readExcelFile,
   validateExcelCharacterData,
   validateExcelTownData,
   validateHeaders,
 } from "../utils";
 import type { ICharacterExcel, ITownExcel } from "../interfaces";
+import { batchInsertCharacters, batchInsertTowns } from "../supabase/api";
+import { data } from "react-router";
 
 export default function AddData() {
   const [selectedType, setSelectedType] = useState("Pionniers");
   const [fileName, setFileName] = useState("");
   const [error, setError] = useState<string[]>([]);
   const [success, setSuccess] = useState("");
-  const [insertTownsCount, setInsertedTownsCount] = useState(-1);
+  const [isLoading, setIsLoading] = useState(false);
+  const [insertedTownsCount, setInsertedTownsCount] = useState(-1);
   const [skippedTownsUpload, setSkippedTownsUpload] = useState<ITownExcel[]>(
     []
   );
-  const [];
+  const [insertedCharactersCount, setInsertedCharactersCount] = useState(-1);
+  const [skippedCharactersUpload, setSkippedCharactersUpload] = useState<
+    ICharacterExcel[]
+  >([]);
   const { user } = useAuth();
 
   function handleDropdownChange(event: React.ChangeEvent<HTMLSelectElement>) {
@@ -32,14 +39,23 @@ export default function AddData() {
     const link = document.createElement("a");
     link.href = url;
     link.download = url.split("/").pop() || "gabarit.xlsx";
-    console.log(link);
     link.click();
   }
 
-  function uploadData(e: React.ChangeEvent<HTMLInputElement>) {
+  async function uploadData(e: React.ChangeEvent<HTMLInputElement>) {
+    setSuccess("");
     setError([]);
-    const file = e.target.files?.[0];
 
+    setInsertedTownsCount(-1);
+    setSkippedTownsUpload([]);
+
+    setInsertedCharactersCount(-1);
+    setSkippedCharactersUpload([]);
+
+    setIsLoading(true);
+
+    const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file) return;
 
     setFileName(file.name);
@@ -47,69 +63,119 @@ export default function AddData() {
     const reader = new FileReader();
     reader.readAsArrayBuffer(file);
 
-    reader.onload = async (event) => {
-      try {
-        const data = new Uint8Array(event.target?.result as ArrayBuffer);
-        const workbook = XLSX.read(data, { type: "array" });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const jsonData: any[] = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+    let jsonData: any[] = [];
+    try {
+      jsonData = await readExcelFile(file);
+    } catch {
+      setError([
+        "Une erreur est survenue pendant la lecture des données du fichier.",
+      ]);
+      setIsLoading(false);
+      return;
+    }
 
-        const headers = jsonData[0] as string[];
-        const { error, type } = validateHeaders(headers);
+    if (jsonData.length === 0) {
+      setError(["Le fichier Excel est vide."]);
+      setIsLoading(false);
+      return;
+    }
 
-        if (error) {
-          setError([error]);
+    const headers = jsonData[0] as string[];
+    const { error: headerError, type: dataTypeFromHeaders } =
+      validateHeaders(headers);
+
+    if (headerError) {
+      setError([headerError]);
+      setIsLoading(false);
+      return;
+    }
+
+    const dataType = dataTypeFromHeaders || selectedType.toLowerCase();
+
+    try {
+      if (dataType === "communes") {
+        const { parsedRows, rowErrors } = validateExcelTownData(jsonData);
+        if (rowErrors.length > 0) {
+          setError(rowErrors);
+          setIsLoading(false);
+          return;
+        } else {
+          setSuccess("Les données sont dans le bon format !");
+        }
+
+        if (parsedRows.length === 0) {
+          setError(["Aucune donnée valide trouvée dans le fichier."]);
+          setIsLoading(false);
           return;
         }
 
-        if (type === "communes") {
-          console.log("Validating town data...");
-          const { parsedRows, rowErrors } = validateExcelTownData(jsonData);
-          if (rowErrors.length > 0) {
-            setError(rowErrors);
-            return;
-          }
-
-          if (parsedRows.length === 0) {
-            setError(["Aucune donnée valide trouvée dans le fichier."]);
-            return;
-          }
-
-          const { errors } = await batchUploadTowns(parsedRows);
-          if (errors.length > 0) {
-            setError(errors);
-            return;
-          }
+        const { insertedTowns, skippedTowns, errorsTowns } =
+          await batchInsertTowns(parsedRows);
+        if (errorsTowns.length > 0) {
+          setError((prev) => [
+            ...prev,
+            "Quelques erreurs sont survenues pendant l'importation des communes.",
+            ...errorsTowns,
+          ]);
+          setIsLoading(false);
+          return;
         }
 
-        if (type === "pionniers") {
-          console.log("Validating character data...");
-          const { parsedRows, rowErrors } =
-            validateExcelCharacterData(jsonData);
-          if (rowErrors.length > 0) {
-            setError(rowErrors);
-            return;
-          }
-
-          if (parsedRows.length === 0) {
-            setError(["Aucune donnée valide trouvée dans le fichier."]);
-            return;
-          }
-
-          const { errors } = await batchUploadCharacters(parsedRows);
-          if (errors.length > 0) {
-            setError(errors);
-            return;
-          }
+        if (insertedTowns > 0) {
+          setInsertedTownsCount(insertedTowns);
+          setSkippedTownsUpload(skippedTowns);
+        } else {
+          setError(["Aucune nouvelle commune n'a été insérée."]);
+          setIsLoading(false);
+          return;
         }
-
-        setSuccess("Données téléversées avec succès !");
-      } catch (err) {
-        setError([
-          "Une erreur est survenue pendant l'importation des données.",
-        ]);
       }
-    };
+
+      if (dataType === "pionniers") {
+        const { parsedRows, rowErrors } = validateExcelCharacterData(jsonData);
+        if (rowErrors.length > 0) {
+          setError(rowErrors);
+          setIsLoading(false);
+          return;
+        } else {
+          setSuccess("Les données sont dans le bon format !");
+        }
+
+        if (parsedRows.length === 0) {
+          setError(["Aucune donnée valide trouvée dans le fichier."]);
+          setIsLoading(false);
+          return;
+        }
+
+        const {
+          insertedCharactersNumber,
+          skippedCharacters,
+          errorsCharacters,
+        } = await batchInsertCharacters(parsedRows);
+        if (errorsCharacters.length > 0) {
+          setError((prev) => [
+            ...prev,
+            "Quelques erreurs sont survenues pendant l'importation des pionniers.",
+            ...errorsCharacters,
+          ]);
+          setIsLoading(false);
+          return;
+        }
+
+        if (insertedCharactersNumber > 0) {
+          setInsertedCharactersCount(insertedCharactersNumber);
+          setSkippedCharactersUpload(skippedCharacters);
+        } else {
+          setError(["Aucun nouveau pionnier n'a été inséré."]);
+          setIsLoading(false);
+          return;
+        }
+      }
+      setSuccess("Importation des données réussie !");
+    } catch (err) {
+      setError(["Une erreur est survenue pendant l'ajout de données"]);
+    }
+    setIsLoading(false);
   }
 
   return (
@@ -149,20 +215,55 @@ export default function AddData() {
             </label>
             {fileName !== "" ? <p>Nom du fichier : {fileName}</p> : ""}
           </div>
-          {error && <p className="text-red-500">{error}</p>}
-          {success && <p className="text-green-700">{success}</p>}
+          <div className="mt-5 text-lg space-y-2">
+            {isLoading && <p className="mt-5">Importation en cours...</p>}
+            {error && <p className="text-red-500">{error.join(" ")}</p>}
+            {success && <p className="text-green-700">{success}</p>}
+            {insertedTownsCount !== -1 && (
+              <div className="mt-5">
+                <p className="text-green-700">
+                  Villes/Communes ajoutées: {insertedTownsCount}
+                </p>
+                {skippedTownsUpload.length > 0 && (
+                  <div className="mt-3">
+                    <p className="font-medium">
+                      Villes/communes ignorées (déjà existantes):
+                    </p>
+                    <ul className="list-disc list-inside">
+                      {skippedTownsUpload.map((town, i) => (
+                        <li key={i}>
+                          {town.name} (Code INSEE: {town.insee_code})
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {insertedCharactersCount !== -1 && (
+              <div className="mt-5">
+                <p className="text-green-700">
+                  Pionniers ajoutés: {insertedCharactersCount}
+                </p>
+                {skippedCharactersUpload.length > 0 && (
+                  <div className="mt-3">
+                    <p>Pionniers ignorés (mauvais code INSEE associé):</p>
+                    <ul className="list-disc list-inside">
+                      {skippedCharactersUpload.map((char, i) => (
+                        <li key={i}>
+                          {char.firstname} {char.lastname} (Code INSEE:{" "}
+                          {char.insee_code})
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
   );
-}
-function batchUploadTowns(
-  parsedRows: ITownExcel[]
-): { errors: any } | PromiseLike<{ errors: any }> {
-  throw new Error("Function not implemented.");
-}
-function batchUploadCharacters(
-  parsedRows: ICharacterExcel[]
-): { errors: any } | PromiseLike<{ errors: any }> {
-  throw new Error("Function not implemented.");
 }
