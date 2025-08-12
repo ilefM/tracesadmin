@@ -17,6 +17,13 @@ export default function NavBar() {
         Traces Nouvelle France - Édition
       </NavLink>
       <div className="space-x-4">
+        <NavLink
+          to="/televerser-un-fichier"
+          className="bg-gray-300 px-4 py-2 rounded"
+        >
+          Téléverser des données
+        </NavLink>
+
         <NavLink to="/a-propos" className="bg-gray-300 px-4 py-2 rounded">
           Aide
         </NavLink>

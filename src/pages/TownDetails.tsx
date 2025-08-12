@@ -28,7 +28,7 @@ export default function TownDetails() {
         .single();
 
       if (error) {
-        setErrorMsg(error.message);
+        setErrorMsg("Une erreur s'est produite lors du chargement des données");
       } else {
         setTown(data ?? null);
         setFormData(data ?? {});
@@ -38,20 +38,20 @@ export default function TownDetails() {
     fetchTown();
   }, [id]);
 
-  const handleChange = (field: keyof ITown, value: string) => {
+  function handleChange(field: keyof ITown, value: string) {
     setFormError(null);
     setFormData((prev) => ({ ...prev, [field]: value }));
-  };
+  }
 
-  const handlePositionChange = (index: 0 | 1, value: number) => {
+  function handlePositionChange(index: 0 | 1, value: number) {
     setFormData((prev) => {
       const updated = [...(prev.position ?? [0, 0])] as [number, number];
       updated[index] = value;
       return { ...prev, position: updated };
     });
-  };
+  }
 
-  const handleUpdate = async () => {
+  async function handleUpdate() {
     if (!id || !user) return;
     if (!formData.name || formData.name.trim() === "") {
       setFormError("Le nom de la commune ne peut pas être vide.");
@@ -81,7 +81,7 @@ export default function TownDetails() {
     }
 
     setLoading(false);
-  };
+  }
 
   if (loading) return <p className="text-center">Chargement…</p>;
   if (errorMsg) return <p className="text-red-600 text-center">Une </p>;
@@ -209,7 +209,7 @@ export default function TownDetails() {
 
         {errorMsg && (
           <p className="text-red-600">
-            Une erreur s'est produite. Veuillez rafraîchir la page ou réessayer.{" "}
+            Une erreur s'est produite. Veuillez rafraîchir la page ou réessayer.
             {errorMsg}
           </p>
         )}

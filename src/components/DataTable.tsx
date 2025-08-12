@@ -97,7 +97,7 @@ export default function DataTable() {
     }
   }
 
-  function handleExportToExcel() {
+  function handleExport() {
     const exportData = data.map((item: any) => {
       if (view === "towns") {
         return {
@@ -215,7 +215,7 @@ export default function DataTable() {
       </div>
 
       <button
-        onClick={handleExportToExcel}
+        onClick={handleExport}
         className="bg-green-600 text-white px-4 py-2 rounded mb-4 hover:bg-green-700"
       >
         Exporter en Excel

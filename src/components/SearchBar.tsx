@@ -2,12 +2,12 @@ import { useEffect, useState } from "react";
 import { supabase } from "../supabase/supabaseClient";
 import { IoSearchOutline } from "react-icons/io5";
 import { useNavigate } from "react-router";
-import type { Character, Town } from "../interfaces";
+import type { ICharacter, ITown } from "../interfaces";
 
 export default function SearchBar() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [towns, setTowns] = useState<Town[]>([]);
-  const [characters, setCharacters] = useState<Character[]>([]);
+  const [towns, setTowns] = useState<ITown[]>([]);
+  const [characters, setCharacters] = useState<ICharacter[]>([]);
   const [isSuggestionsVisible, setIsSuggestionsVisible] = useState(false);
 
   const navigate = useNavigate();
