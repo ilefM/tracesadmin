@@ -1,4 +1,4 @@
-import type { ICharacterExcel, ITownExcel } from "../interfaces";
+import type { ICharacterExcel, ITown, ITownExcel } from "../interfaces";
 import { supabase } from "./supabaseClient";
 
 async function fetchAllInseeCodes() {
@@ -145,4 +145,61 @@ export async function batchInsertCharacters(characters: ICharacterExcel[]) {
     skippedCharacters,
     errorsCharacters,
   };
+}
+
+export async function getTownFromId(id: string): Promise<ITown | null> {
+  const { data, error } = await supabase
+    .from("towns")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (error) {
+    throw Error(
+      "Erreur lors de la récupération de la commune: " + error.message
+    );
+  }
+
+  return data as ITown;
+}
+
+export async function updateTown(newTown: ITown, id: string) {
+  const { data: existingTownData, error: existingTownError } = await supabase
+    .from("towns")
+    .select("id, name, insee_code")
+    .eq("insee_code", newTown.insee_code)
+    .single();
+
+  if (existingTownError) {
+    throw Error(
+      "Erreur lors de la vérification du code INSEE: " +
+        existingTownError.message
+    );
+  }
+
+  if (existingTownData && existingTownData.id !== id) {
+    throw Error(
+      "Le code INSEE existe déjà pour une autre commune." +
+        existingTownData.name
+    );
+  }
+
+  const { error } = await supabase
+    .from("towns")
+    .update({
+      name: newTown.name,
+      insee_code: newTown.insee_code,
+      dep_code: newTown.dep_code,
+      postal_code: newTown.postal_code,
+      position: newTown.position,
+      description: newTown.description,
+    })
+    .eq("id", id)
+    .select();
+
+  if (error) {
+    throw Error(
+      "Erreur lors de la mise à jour de la commune: " + error.message
+    );
+  }
 }

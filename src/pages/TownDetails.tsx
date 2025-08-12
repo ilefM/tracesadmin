@@ -3,49 +3,58 @@ import { useParams } from "react-router";
 import type { ITown } from "../interfaces";
 import { supabase } from "../supabase/supabaseClient";
 import { useAuth } from "../context/AuthProvider";
+import { getTownFromId } from "../supabase/api";
 
 export default function TownDetails() {
-  const [town, setTown] = useState<ITown | null>(null);
+  const [town, setTown] = useState<ITown>();
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState<Partial<ITown>>({});
+  const [formData, setFormData] = useState<Partial<ITown>>();
   const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [formError, setFormError] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string>("");
+  const [formError, setFormError] = useState<string>("");
 
   const { id } = useParams<"id">();
   const { user } = useAuth();
 
   useEffect(() => {
     if (!id) return;
+
     const fetchTown = async () => {
       setLoading(true);
-      setErrorMsg(null);
 
-      const { data, error } = await supabase
-        .from("towns")
-        .select("*")
-        .eq("id", id)
-        .single();
-
-      if (error) {
-        setErrorMsg("Une erreur s'est produite lors du chargement des données");
-      } else {
-        setTown(data ?? null);
-        setFormData(data ?? {});
+      try {
+        const townFromId = await getTownFromId(id);
+        if (!townFromId) {
+          setErrorMsg("Commune non trouvée.");
+          setLoading(false);
+          return;
+        }
+        setTown(townFromId);
+        setLoading(false);
+      } catch (err) {
+        setLoading(false);
+        setErrorMsg(
+          err instanceof Error
+            ? err.message
+            : "Une erreur s'est produite lors du chargement de la commune."
+        );
       }
-      setLoading(false);
     };
+
     fetchTown();
   }, [id]);
 
   function handleChange(field: keyof ITown, value: string) {
-    setFormError(null);
+    setFormError("");
+    if (field === "insee_code" && value.length === 0) {
+      setFormError("Le code INSEE ne peut pas être vide.");
+    }
     setFormData((prev) => ({ ...prev, [field]: value }));
   }
 
   function handlePositionChange(index: 0 | 1, value: number) {
     setFormData((prev) => {
-      const updated = [...(prev.position ?? [0, 0])] as [number, number];
+      const updated = [...(prev?.position ?? [0, 0])] as [number, number];
       updated[index] = value;
       return { ...prev, position: updated };
     });
@@ -53,13 +62,13 @@ export default function TownDetails() {
 
   async function handleUpdate() {
     if (!id || !user) return;
-    if (!formData.name || formData.name.trim() === "") {
+    if (!formData?.name || formData.name.trim() === "") {
       setFormError("Le nom de la commune ne peut pas être vide.");
       return;
     }
 
     setLoading(true);
-    setFormError(null);
+    setFormError("");
 
     const { error } = await supabase
       .from("towns")
@@ -84,7 +93,7 @@ export default function TownDetails() {
   }
 
   if (loading) return <p className="text-center">Chargement…</p>;
-  if (errorMsg) return <p className="text-red-600 text-center">Une </p>;
+  if (errorMsg) return <p className="text-red-600 text-center">{errorMsg}</p>;
 
   return (
     <div className="max-w-2xl mx-auto px-6 py-10">
@@ -108,7 +117,7 @@ export default function TownDetails() {
           {isEditing ? (
             <input
               type="text"
-              value={formData.name || ""}
+              value={formData?.name || ""}
               onChange={(e) => handleChange("name", e.target.value)}
               className="mt-1 w-full border border-gray-300 rounded px-3 py-2"
             />
@@ -122,7 +131,7 @@ export default function TownDetails() {
           {isEditing ? (
             <input
               type="number"
-              value={formData.insee_code || ""}
+              value={formData?.insee_code || ""}
               onChange={(e) => handleChange("insee_code", e.target.value)}
               className="mt-1 w-full border border-gray-300 rounded px-3 py-2"
             />
@@ -136,7 +145,7 @@ export default function TownDetails() {
           {isEditing ? (
             <input
               type="number"
-              value={formData.postal_code || ""}
+              value={formData?.postal_code || ""}
               onChange={(e) => handleChange("postal_code", e.target.value)}
               className="mt-1 w-full border border-gray-300 rounded px-3 py-2"
             />
@@ -150,7 +159,7 @@ export default function TownDetails() {
           {isEditing ? (
             <input
               type="text"
-              value={formData.dep_code || ""}
+              value={formData?.dep_code || ""}
               onChange={(e) => handleChange("dep_code", e.target.value)}
               className="mt-1 w-full border border-gray-300 rounded px-3 py-2"
             />
@@ -166,7 +175,7 @@ export default function TownDetails() {
               <input
                 type="number"
                 placeholder="Latitude"
-                value={formData.position?.[0] ?? ""}
+                value={formData?.position?.[0] ?? ""}
                 onChange={(e) =>
                   handlePositionChange(0, parseFloat(e.target.value))
                 }
@@ -175,7 +184,7 @@ export default function TownDetails() {
               <input
                 type="number"
                 placeholder="Longitude"
-                value={formData.position?.[1] ?? ""}
+                value={formData?.position?.[1] ?? ""}
                 onChange={(e) =>
                   handlePositionChange(1, parseFloat(e.target.value))
                 }
@@ -184,7 +193,7 @@ export default function TownDetails() {
             </div>
           ) : (
             <p className="text-gray-800 mt-1">
-              {formData.position
+              {formData?.position
                 ? `${formData.position[0]}, ${formData.position[1]}`
                 : "Aucune information"}
             </p>
@@ -196,7 +205,7 @@ export default function TownDetails() {
           {isEditing ? (
             <textarea
               rows={4}
-              value={formData.description || ""}
+              value={formData?.description || ""}
               onChange={(e) => handleChange("description", e.target.value)}
               className="mt-1 w-full border border-gray-300 rounded px-3 py-2"
             />
