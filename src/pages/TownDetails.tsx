@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router";
 import type { ITown } from "../interfaces";
-import { supabase } from "../supabase/supabaseClient";
 import { useAuth } from "../context/AuthProvider";
-import { getTownFromId } from "../supabase/api";
+import { getTownFromId, updateTown } from "../supabase/api";
 
 export default function TownDetails() {
   const [town, setTown] = useState<ITown>();
@@ -11,7 +10,9 @@ export default function TownDetails() {
   const [formData, setFormData] = useState<Partial<ITown>>();
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string>("");
-  const [formError, setFormError] = useState<string>("");
+  const [errorUpdate, setErrorUpdate] = useState<string>("");
+  const [nameValidation, setNameValidation] = useState<string>("");
+  const [inseeValidation, setInseeValidation] = useState<string>("");
 
   const { id } = useParams<"id">();
   const { user } = useAuth();
@@ -46,10 +47,6 @@ export default function TownDetails() {
   }, [id]);
 
   function handleChange(field: keyof ITown, value: string) {
-    setFormError("");
-    if (field === "insee_code" && value.length === 0) {
-      setFormError("Le code INSEE ne peut pas être vide.");
-    }
     setFormData((prev) => ({ ...prev, [field]: value }));
   }
 
@@ -62,33 +59,34 @@ export default function TownDetails() {
   }
 
   async function handleUpdate() {
+    setNameValidation("");
+    setInseeValidation("");
     if (!id || !user) return;
     if (!formData?.name || formData.name.trim() === "") {
-      setFormError("Le nom de la commune ne peut pas être vide.");
+      setNameValidation("Le nom de la commune ne peut pas être vide.");
+      return;
+    }
+
+    if (!formData?.insee_code || formData.insee_code.trim() === "") {
+      setInseeValidation("Le code INSEE ne peut pas être vide.");
       return;
     }
 
     setLoading(true);
-    setFormError("");
-
-    const { error } = await supabase
-      .from("towns")
-      .update({
-        name: formData.name,
-        insee_code: formData.insee_code,
-        dep_code: formData.dep_code,
-        postal_code: formData.postal_code,
-        position: formData.position,
-        description: formData.description,
-      })
-      .eq("id", id);
-
-    if (error) {
-      setErrorMsg(error.message);
-    } else {
-      setTown({ ...town!, ...formData });
-      setIsEditing(false);
+    try {
+      await updateTown(formData as ITown, id);
+    } catch (err) {
+      setLoading(false);
+      setErrorUpdate(
+        err instanceof Error
+          ? err.message
+          : "Une erreur s'est produite lors de la mise à jour de la commune."
+      );
+      return;
     }
+
+    setTown({ ...town!, ...formData });
+    setIsEditing(false);
 
     setLoading(false);
   }
@@ -131,7 +129,7 @@ export default function TownDetails() {
           <label className="text-sm text-gray-600">Code INSEE</label>
           {isEditing ? (
             <input
-              type="number"
+              type="text"
               value={formData?.insee_code || ""}
               onChange={(e) => handleChange("insee_code", e.target.value)}
               className="mt-1 w-full border border-gray-300 rounded px-3 py-2"
@@ -217,21 +215,26 @@ export default function TownDetails() {
           )}
         </div>
 
-        {errorMsg && (
-          <p className="text-red-600">
-            Une erreur s'est produite. Veuillez rafraîchir la page ou réessayer.
-            {errorMsg}
-          </p>
-        )}
+        {errorUpdate && <p className="text-red-600">{errorUpdate}</p>}
 
         {isEditing && (
-          <button
-            onClick={handleUpdate}
-            className="mt-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-            disabled={loading}
-          >
-            Sauvegarder
-          </button>
+          <div>
+            {nameValidation && <p className="text-red-600">{nameValidation}</p>}
+            {inseeValidation && (
+              <p className="text-red-600">{inseeValidation}</p>
+            )}
+
+            <p className="text-sm text-gray-500">
+              Assurez-vous que le code INSEE est unique pour cette commune.
+            </p>
+            <button
+              onClick={handleUpdate}
+              className="mt-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+              disabled={loading}
+            >
+              Sauvegarder
+            </button>
+          </div>
         )}
       </div>
     </div>

@@ -179,8 +179,11 @@ export async function updateTown(newTown: ITown, id: string) {
 
   if (existingTownData && existingTownData.id !== id) {
     throw Error(
-      "Le code INSEE existe déjà pour une autre commune." +
-        existingTownData.name
+      "Le code INSEE existe déjà pour la commune " +
+        existingTownData.name +
+        " (" +
+        existingTownData.insee_code +
+        ")"
     );
   }
 
