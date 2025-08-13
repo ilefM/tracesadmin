@@ -27,9 +27,12 @@ export default function SignIn() {
     if (error) {
       setError(error.message);
     } else {
-      navigate("/");
+      const lastPath = localStorage.getItem("lastVisitedPath") || "/";
+      localStorage.removeItem("lastVisitedPath");
+      navigate(lastPath, { replace: true });
     }
   }
+
   return (
     <form
       onSubmit={handleSignIn}

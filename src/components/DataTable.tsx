@@ -8,7 +8,7 @@ export default function DataTable() {
   const [view, setView] = useState<"towns" | "characters">("characters");
   const [townsData, setTownsData] = useState<ITown[]>([]);
   const [charactersData, setCharactersData] = useState<ICharacter[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [townFilterInput, setTownFilterInput] = useState("");
   const [depFilterInput, setDepFilterInput] = useState("");
@@ -23,7 +23,7 @@ export default function DataTable() {
 
   useEffect(() => {
     const fetchAllRows = async () => {
-      setLoading(true);
+      setIsLoading(true);
 
       const allRows: (ITown | ICharacter)[] = [];
       const pageSize = 100;
@@ -31,38 +31,59 @@ export default function DataTable() {
       let hasMore = true;
 
       while (hasMore) {
-        let query =
-          view === "towns"
-            ? supabase
-                .from("towns")
-                .select("*")
-                .range(page * pageSize, (page + 1) * pageSize - 1)
-            : supabase
-                .from("characters")
-                .select("*, towns!inner(name)")
-                .range(page * pageSize, (page + 1) * pageSize - 1);
+        if (view === "characters" && appliedTownFilter === "lieu=aucun") {
+          const { data, error } = await supabase
+            .from("characters")
+            .select("*")
+            .is("town_id", null)
+            .range(page * pageSize, (page + 1) * pageSize - 1);
 
-        if (appliedDepFilter) {
-          query = query.ilike("dep_code", `%${appliedDepFilter}%`);
-        }
+          if (error) {
+            console.error("Error fetching data:", error.message);
+            break;
+          }
 
-        if (view === "characters" && appliedTownFilter) {
-          query = query.ilike("towns.name", `%${appliedTownFilter}%`);
-        }
-
-        const { data, error } = await query;
-
-        if (error) {
-          console.error("Error fetching data:", error.message);
-          break;
-        }
-
-        if (data && data.length > 0) {
-          allRows.push(...data);
-          page++;
-          hasMore = data.length === pageSize;
+          if (data && data.length > 0) {
+            allRows.push(...data);
+            page++;
+            hasMore = data.length === pageSize;
+          } else {
+            hasMore = false;
+          }
         } else {
-          hasMore = false;
+          let query =
+            view === "towns"
+              ? supabase
+                  .from("towns")
+                  .select("*")
+                  .range(page * pageSize, (page + 1) * pageSize - 1)
+              : supabase
+                  .from("characters")
+                  .select("*, towns!inner(dep_code, name)")
+                  .range(page * pageSize, (page + 1) * pageSize - 1);
+
+          if (appliedDepFilter) {
+            query = query.ilike("towns.dep_code", `%${appliedDepFilter}%`);
+          }
+
+          if (view === "characters" && appliedTownFilter) {
+            query = query.ilike("towns.name", `%${appliedTownFilter}%`);
+          }
+
+          const { data, error } = await query;
+
+          if (error) {
+            console.error("Error fetching data:", error.message);
+            break;
+          }
+
+          if (data && data.length > 0) {
+            allRows.push(...data);
+            page++;
+            hasMore = data.length === pageSize;
+          } else {
+            hasMore = false;
+          }
         }
       }
 
@@ -73,7 +94,7 @@ export default function DataTable() {
       }
 
       setPage(1);
-      setLoading(false);
+      setIsLoading(false);
     };
 
     fetchAllRows();
@@ -149,7 +170,7 @@ export default function DataTable() {
         {view === "characters" ? (
           <div className="w-full flex space-x-7 items-end">
             <div className="flex flex-col space-y-2">
-              <label htmlFor="townInput">Nom de commune</label>
+              <label htmlFor="townInput">Nom de commune/ville</label>
               <input
                 id="townInput"
                 type="text"
@@ -161,7 +182,9 @@ export default function DataTable() {
             </div>
 
             <div className="flex flex-col space-y-2">
-              <label htmlFor="departmentInput">Nom/numéro du département</label>
+              <label htmlFor="departmentInput">
+                Nom/numéro du département ou nom de la province
+              </label>
               <input
                 id="departmentInput"
                 type="text"
@@ -179,7 +202,8 @@ export default function DataTable() {
                   setAppliedDepFilter(depFilterInput);
                   setPage(1);
                 }}
-                className="bg-[#6096ba] cursor-pointer text-white px-4 py-2 rounded hover:bg-[#446a83]"
+                className="bg-[#6096ba] cursor-pointer disabled:cursor-auto disabled:bg-gray-200 text-white px-4 py-2 rounded hover:bg-[#446a83]"
+                disabled={isLoading}
               >
                 Appliquer
               </button>
@@ -205,7 +229,8 @@ export default function DataTable() {
                   setAppliedDepFilter(depFilterInput);
                   setPage(1);
                 }}
-                className="bg-[#6096ba] cursor-pointer text-white px-4 py-2 rounded hover:bg-[#446a83]"
+                className="bg-[#6096ba] cursor-pointer text-white disabled:bg-gray-200 px-4 py-2 rounded hover:bg-[#446a83]"
+                disabled={isLoading}
               >
                 Appliquer
               </button>
@@ -221,7 +246,7 @@ export default function DataTable() {
         Exporter en Excel
       </button>
 
-      {loading ? (
+      {isLoading ? (
         <p>Chargement...</p>
       ) : (
         <div>
@@ -236,7 +261,7 @@ export default function DataTable() {
             ) : (
               <div className="grid grid-cols-3 gap-4 font-medium px-4">
                 <p>Nom</p>
-                <p>Commune</p>
+                <p>Commune/ville</p>
                 <p>Département</p>
               </div>
             )}
@@ -278,7 +303,7 @@ export default function DataTable() {
                     {item.towns?.name || "-"}
                   </p>
                   <p className="text-sm text-gray-600">
-                    {item.dep_code || "-"}
+                    {item.towns?.dep_code || "-"}
                   </p>
                 </li>
               )

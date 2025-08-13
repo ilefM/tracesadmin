@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
-import { supabase } from "../supabase/supabaseClient";
 import { IoSearchOutline } from "react-icons/io5";
 import { useNavigate } from "react-router";
-import type { ICharacter, ITown } from "../interfaces";
+import type { ICharacterSuggestion, ITownSuggestion } from "../interfaces";
+import { getCharactersSuggestions, getTownsSuggestions } from "../supabase/api";
 
 export default function SearchBar() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [towns, setTowns] = useState<ITown[]>([]);
-  const [characters, setCharacters] = useState<ICharacter[]>([]);
+  const [towns, setTowns] = useState<ITownSuggestion[]>([]);
+  const [characters, setCharacters] = useState<ICharacterSuggestion[]>([]);
   const [isSuggestionsVisible, setIsSuggestionsVisible] = useState(false);
 
   const navigate = useNavigate();
@@ -28,19 +28,11 @@ export default function SearchBar() {
   }, [searchTerm]);
 
   const fetchSuggestions = async (term: string) => {
-    const { data: townsData } = await supabase
-      .from("towns")
-      .select("id, name")
-      .ilike("name", `${term}%`);
+    const charactersSuggestions = await getCharactersSuggestions(term);
+    const townsSuggestions = await getTownsSuggestions(term);
 
-    setTowns(townsData || []);
-
-    const { data: charactersData } = await supabase
-      .from("characters")
-      .select("id, firstname, lastname")
-      .or(`firstname.ilike.${term}%,lastname.ilike.${term}%`);
-
-    setCharacters(charactersData || []);
+    setTowns(townsSuggestions);
+    setCharacters(charactersSuggestions);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

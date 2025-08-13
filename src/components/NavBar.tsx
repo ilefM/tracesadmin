@@ -1,15 +1,23 @@
-import { NavLink, useNavigate } from "react-router";
+import { NavLink, useLocation, useNavigate } from "react-router";
 import { useAuth } from "../context/AuthProvider";
 import { supabase } from "../supabase/supabaseClient";
 
 export default function NavBar() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   async function handleSignOut() {
     await supabase.auth.signOut();
     navigate("/");
   }
+
+  const handleBeforeLoginNav = () => {
+    localStorage.setItem(
+      "lastVisitedPath",
+      location.pathname + location.search
+    );
+  };
 
   return (
     <div className="max-w-[1000px] w-full flex justify-between items-center py-3">
@@ -25,7 +33,11 @@ export default function NavBar() {
         </NavLink>
 
         {!user ? (
-          <NavLink to="/se-connecter" className="bg-gray-300 px-4 py-2 rounded">
+          <NavLink
+            to="/se-connecter"
+            onClick={handleBeforeLoginNav}
+            className="bg-gray-300 px-4 py-2 rounded"
+          >
             Se connecter
           </NavLink>
         ) : (

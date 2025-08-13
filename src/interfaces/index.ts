@@ -44,3 +44,14 @@ export interface ICharacterExcel {
   town_id?: string;
   insee_code?: string;
 }
+
+export interface ITownSuggestion {
+  id: string;
+  name: string;
+}
+
+export interface ICharacterSuggestion {
+  id: string;
+  firstname: string;
+  lastname: string;
+}

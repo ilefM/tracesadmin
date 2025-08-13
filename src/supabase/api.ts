@@ -1,8 +1,10 @@
 import type {
   ICharacter,
   ICharacterExcel,
+  ICharacterSuggestion,
   ITown,
   ITownExcel,
+  ITownSuggestion,
 } from "../interfaces";
 import { supabase } from "./supabaseClient";
 
@@ -302,4 +304,34 @@ export async function deleteTown(id: string): Promise<void> {
       "Erreur lors de la suppression de la commune: " + error.message
     );
   }
+}
+
+export async function getCharactersSuggestions(
+  term: string
+): Promise<ICharacterSuggestion[]> {
+  const { data: characters } = await supabase
+    .from("characters")
+    .select("id, firstname, lastname")
+    .or(`firstname.ilike.${term}%,lastname.ilike.${term}%`);
+
+  if (!characters) {
+    return [];
+  }
+
+  return characters;
+}
+
+export async function getTownsSuggestions(
+  term: string
+): Promise<ITownSuggestion[]> {
+  const { data: towns } = await supabase
+    .from("towns")
+    .select("id, name")
+    .ilike("name", `${term}%`);
+
+  if (!towns) {
+    return [];
+  }
+
+  return towns;
 }
