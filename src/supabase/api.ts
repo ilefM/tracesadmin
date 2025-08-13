@@ -129,7 +129,7 @@ export async function batchInsertCharacters(characters: ICharacterExcel[]) {
   }
 
   const validCharactersWithoutInseeProp = validCharacters.map(
-    ({ insee_code, ...rest }) => rest
+    ({ insee_code: _, ...rest }) => rest
   );
 
   const chunkSize = 500;

@@ -1,5 +1,5 @@
 import { NavLink, useLocation, useNavigate } from "react-router";
-import { useAuth } from "../context/AuthProvider";
+import { useAuth } from "../auth/useAuth";
 import { supabase } from "../supabase/supabaseClient";
 
 export default function NavBar() {

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useAuth } from "../context/AuthProvider";
+import { useAuth } from "../auth/useAuth";
 
 import {
   readExcelFile,
@@ -171,7 +171,7 @@ export default function AddData() {
         }
       }
       setSuccess("Importation des données réussie !");
-    } catch (err) {
+    } catch (_) {
       setError(["Une erreur est survenue pendant l'ajout de données"]);
     }
     setIsLoading(false);

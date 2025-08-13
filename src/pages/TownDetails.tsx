@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import type { ITown } from "../interfaces";
-import { useAuth } from "../context/AuthProvider";
+import { useAuth } from "../auth/useAuth";
 import { deleteTown, getTownFromId, updateTown } from "../supabase/api";
 
 export default function TownDetails() {

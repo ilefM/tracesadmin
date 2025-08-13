@@ -1,7 +1,7 @@
 import { useNavigate, useParams } from "react-router";
 import type { ICharacter } from "../interfaces";
 import { useEffect, useState } from "react";
-import { useAuth } from "../context/AuthProvider";
+import { useAuth } from "../auth/useAuth";
 import {
   deleteCharacter,
   getCharacterFromId,

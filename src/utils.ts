@@ -1,4 +1,3 @@
-import { FaS } from "react-icons/fa6";
 import type { ICharacterExcel, ITownExcel } from "./interfaces";
 import * as XLSX from "xlsx";
 
