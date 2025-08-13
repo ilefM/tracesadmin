@@ -36,9 +36,9 @@ export default function SignIn() {
   return (
     <form
       onSubmit={handleSignIn}
-      className="w-[400px] mx-auto rounded-2xl mt-20 flex p-4 flex-col items-center bg-[#9a8c98] text-white"
+      className="w-[400px] mx-auto rounded-2xl mt-20 flex p-4 flex-col items-center bg-[#dcdcdc] shadow-xl"
     >
-      <h1 className="text-2xl font-bold mb-4">Se connecter</h1>
+      <h1 className="text-xl mb-4">Se connecter</h1>
       <p className="text-red-400 text-sm">{error}</p>
       <div className="flex flex-col w-full mt-2">
         <label htmlFor="email">Adresse courriel</label>
@@ -47,7 +47,7 @@ export default function SignIn() {
           id="email"
           name="email"
           placeholder="Adresse courriel"
-          className="border border-gray-300 text-black bg-[#edede9] rounded-md p-2 mt-1"
+          className="border border-gray-300 text-black rounded-md p-2 mt-1"
           onChange={(e) => setLogin(e.target.value)}
         />
       </div>
@@ -58,13 +58,13 @@ export default function SignIn() {
           id="password"
           name="password"
           placeholder="Mot de passe"
-          className="border border-gray-300 text-black bg-[#edede9] rounded-md p-2 mt-1"
+          className="border border-gray-300 text-black rounded-md p-2 mt-1"
           onChange={(e) => setPassword(e.target.value)}
         />
       </div>
 
       <button
-        className="bg-[#c9ada7] text-lg font-semibold cursor-pointer w-full rounded-lg p-2 mt-10 hover:underline"
+        className="bg-[#323232] text-lg text-white font-semibold cursor-pointer w-full rounded-lg p-2 mt-10 hover:underline"
         type="submit"
       >
         Confirmer

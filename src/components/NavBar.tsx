@@ -20,10 +20,18 @@ export default function NavBar() {
   };
 
   return (
-    <div className="max-w-[1000px] w-full flex justify-between items-center py-3">
-      <NavLink to="/" className="cursor-pointer text-2xl">
-        Traces Nouvelle France - Édition
-      </NavLink>
+    <div className="max-w-[1200px] w-full flex justify-between items-center py-3">
+      <div className="flex flex-col ">
+        <NavLink to="/" className="cursor-pointer text-xl">
+          Traces Nouvelle France - Édition
+        </NavLink>
+        {user && (
+          <div className="text-sm text-gray-600 mr-4">
+            Connecté en tant que <strong>{user.email}</strong>
+          </div>
+        )}
+      </div>
+
       <div className="space-x-4">
         <NavLink
           to="/televerser-un-fichier"
