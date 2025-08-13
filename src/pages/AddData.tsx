@@ -9,7 +9,6 @@ import {
 } from "../utils";
 import type { ICharacterExcel, ITownExcel } from "../interfaces";
 import { batchInsertCharacters, batchInsertTowns } from "../supabase/api";
-import { data } from "react-router";
 
 export default function AddData() {
   const [selectedType, setSelectedType] = useState("Pionniers");

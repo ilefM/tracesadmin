@@ -18,6 +18,7 @@ export interface ICharacter {
   town_id?: string;
   towns?: {
     name: string;
+    insee_code: string;
     dep_code: string;
   };
   main_character: boolean;

@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import type { ITown } from "../interfaces";
 import { useAuth } from "../context/AuthProvider";
-import { getTownFromId, updateTown } from "../supabase/api";
+import { deleteTown, getTownFromId, updateTown } from "../supabase/api";
 
 export default function TownDetails() {
   const [town, setTown] = useState<ITown>();
@@ -13,6 +13,10 @@ export default function TownDetails() {
   const [errorUpdate, setErrorUpdate] = useState<string>("");
   const [nameValidation, setNameValidation] = useState<string>("");
   const [inseeValidation, setInseeValidation] = useState<string>("");
+  const [isSuccess, setIsSuccess] = useState("");
+  const [wantToDelete, setWantToDelete] = useState(false);
+
+  const navigate = useNavigate();
 
   const { id } = useParams<"id">();
   const { user } = useAuth();
@@ -26,7 +30,7 @@ export default function TownDetails() {
       try {
         const townFromId = await getTownFromId(id);
         if (!townFromId) {
-          setErrorMsg("Commune non trouvée.");
+          setErrorMsg("Commune/ville non trouvée.");
           setLoading(false);
           return;
         }
@@ -38,7 +42,7 @@ export default function TownDetails() {
         setErrorMsg(
           err instanceof Error
             ? err.message
-            : "Une erreur s'est produite lors du chargement de la commune."
+            : "Une erreur s'est produite lors du chargement de la commune/ville."
         );
       }
     };
@@ -63,7 +67,7 @@ export default function TownDetails() {
     setInseeValidation("");
     if (!id || !user) return;
     if (!formData?.name || formData.name.trim() === "") {
-      setNameValidation("Le nom de la commune ne peut pas être vide.");
+      setNameValidation("Le nom de la commune/ville ne peut pas être vide.");
       return;
     }
 
@@ -80,15 +84,39 @@ export default function TownDetails() {
       setErrorUpdate(
         err instanceof Error
           ? err.message
-          : "Une erreur s'est produite lors de la mise à jour de la commune."
+          : "Une erreur s'est produite lors de la mise à jour de la commune/ville."
       );
       return;
     }
 
     setTown({ ...town!, ...formData });
     setIsEditing(false);
+    setLoading(false);
+    setIsSuccess("Ville mis à jour avec succès.");
+  }
+
+  async function handleDeletion() {
+    if (!id || !user) return;
+    setLoading(true);
+    setErrorUpdate("");
+
+    try {
+      await deleteTown(id);
+    } catch (err) {
+      setLoading(false);
+      setErrorUpdate(
+        err instanceof Error
+          ? err.message
+          : "Une erreur s'est produite lors de la suppression de la commune/ville."
+      );
+      return;
+    }
 
     setLoading(false);
+    setWantToDelete(false);
+    navigate("/");
+    setTown(undefined);
+    setFormData(undefined);
   }
 
   if (loading) return <p className="text-center">Chargement…</p>;
@@ -98,7 +126,7 @@ export default function TownDetails() {
     <div className="max-w-2xl mx-auto px-6 py-10">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-semibold">
-          {isEditing ? "Modifier la commune" : town?.name}
+          {isEditing ? "Modifier la commune/ville" : town?.name}
         </h1>
         {user && (
           <button
@@ -216,6 +244,7 @@ export default function TownDetails() {
         </div>
 
         {errorUpdate && <p className="text-red-600">{errorUpdate}</p>}
+        {isSuccess && <p className="text-green-600">{isSuccess}</p>}
 
         {isEditing && (
           <div>
@@ -225,15 +254,42 @@ export default function TownDetails() {
             )}
 
             <p className="text-sm text-gray-500">
-              Assurez-vous que le code INSEE est unique pour cette commune.
+              Assurez-vous que le code INSEE est unique pour cette
+              commune/ville.
             </p>
-            <button
-              onClick={handleUpdate}
-              className="mt-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-              disabled={loading}
-            >
-              Sauvegarder
-            </button>
+            <div className="mt-4 flex items-end justify-between">
+              <button
+                onClick={handleUpdate}
+                className="mt-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                disabled={loading}
+              >
+                Sauvegarder
+              </button>
+              {wantToDelete ? (
+                <div className="flex items-end space-x-4">
+                  <button
+                    onClick={handleDeletion}
+                    className="bg-red-800 text-white text-sm px-2 h-8 rounded hover:bg-red-700"
+                  >
+                    Confirmer la suppression
+                  </button>
+                  <button
+                    onClick={() => setWantToDelete(false)}
+                    className="bg-gray-300 text-gray-800 px-4 py-2 rounded hover:bg-gray-400"
+                  >
+                    Annuler
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setWantToDelete(true)}
+                  className="bg-red-800 text-white text-sm px-2 h-8 rounded hover:bg-red-700"
+                  disabled={loading}
+                >
+                  Supprimer
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>

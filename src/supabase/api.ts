@@ -1,4 +1,9 @@
-import type { ICharacterExcel, ITown, ITownExcel } from "../interfaces";
+import type {
+  ICharacter,
+  ICharacterExcel,
+  ITown,
+  ITownExcel,
+} from "../interfaces";
 import { supabase } from "./supabaseClient";
 
 async function fetchAllInseeCodes() {
@@ -121,8 +126,6 @@ export async function batchInsertCharacters(characters: ICharacterExcel[]) {
     };
   }
 
-  console.log(skippedCharacters);
-
   const validCharactersWithoutInseeProp = validCharacters.map(
     ({ insee_code, ...rest }) => rest
   );
@@ -203,6 +206,100 @@ export async function updateTown(newTown: ITown, id: string) {
   if (error) {
     throw Error(
       "Erreur lors de la mise à jour de la commune: " + error.message
+    );
+  }
+}
+
+export async function getCharacterFromId(
+  id: string
+): Promise<ICharacter | null> {
+  const { data, error } = await supabase
+    .from("characters")
+    .select("*, towns(insee_code)")
+    .eq("id", id)
+    .single();
+
+  if (error) {
+    throw Error(
+      "Erreur lors de la récupération du personnage: " + error.message
+    );
+  }
+
+  return data as ICharacter;
+}
+
+export async function updateCharacter(
+  newCharacter: ICharacter,
+  id: string,
+  newInsee: string | null
+): Promise<void> {
+  const { data: townData, error: townError } = await supabase
+    .from("towns")
+    .select("id, insee_code")
+    .eq("insee_code", newInsee)
+    .single();
+
+  if (!townData) {
+    throw Error("Le code INSEE fourni n'existe pas.");
+  }
+
+  if (townError) {
+    throw Error("Erreur lors de la vérification du code INSEE");
+  }
+
+  const { error } = await supabase
+    .from("characters")
+    .update({
+      lastname: newCharacter.lastname,
+      firstname: newCharacter.firstname,
+      bio: newCharacter.bio,
+      birthplace: newCharacter.birthplace,
+      deathplace: newCharacter.deathplace,
+      town_id: townData.id,
+      main_character: newCharacter.main_character,
+    })
+    .eq("id", id);
+
+  if (error) {
+    throw Error(
+      "Erreur lors de la mise à jour du personnage: " + error.message
+    );
+  }
+}
+
+export async function deleteCharacter(id: string): Promise<void> {
+  const { error } = await supabase.from("characters").delete().eq("id", id);
+
+  if (error) {
+    throw Error(
+      "Erreur lors de la suppression du personnage: " + error.message
+    );
+  }
+}
+
+export async function deleteTown(id: string): Promise<void> {
+  const { data: characters, error: charactersError } = await supabase
+    .from("characters")
+    .select("id")
+    .eq("town_id", id);
+
+  if (charactersError) {
+    throw Error(
+      "Erreur lors de la récupération des personnages associés: " +
+        charactersError.message
+    );
+  }
+
+  if (characters && characters.length > 0) {
+    throw Error(
+      "Impossible de supprimer la commune/ville car elle est associée à des personnages."
+    );
+  }
+  const { error } = await supabase.from("towns").delete().eq("id", id);
+
+  if (error) {
+    throw Error(
+      "Erreur lors de la suppression de la commune: " + error.message
     );
   }
 }
