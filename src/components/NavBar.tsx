@@ -57,7 +57,7 @@ export default function NavBar() {
           </button>
         )}
 
-        <NavLink to="/a-propos" className="bg-gray-300 px-4 py-2 rounded">
+        <NavLink to="/aide" className="bg-gray-300 px-4 py-2 rounded">
           Aide
         </NavLink>
       </div>
