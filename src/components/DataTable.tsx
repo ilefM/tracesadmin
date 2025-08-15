@@ -63,13 +63,17 @@ export default function DataTable() {
                   .range(page * pageSize, (page + 1) * pageSize - 1);
 
           if (appliedDepFilter) {
-            query = query.ilike("towns.dep_code", `%${appliedDepFilter}%`);
+            if (view === "towns") {
+              query = query.ilike("dep_code", `%${appliedDepFilter}%`);
+            } else {
+              query = query.ilike("towns.dep_code", `%${appliedDepFilter}%`);
+            }
           }
 
           if (view === "characters" && appliedTownFilter) {
             query = query.ilike("towns.name", `%${appliedTownFilter}%`);
           }
-
+          console.log("depfilter", depFilterInput);
           const { data, error } = await query;
 
           if (error) {
