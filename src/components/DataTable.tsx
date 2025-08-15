@@ -152,7 +152,7 @@ export default function DataTable() {
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, name);
 
-    XLSX.writeFile(workbook, `${name}.xlsx`, { bookType: "csv" });
+    XLSX.writeFile(workbook, `donnees_${name}.csv`, { bookType: "csv" });
   }
 
   return (
